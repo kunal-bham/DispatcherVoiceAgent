@@ -1,82 +1,9 @@
 import speech_recognition as sr
-import os
-import json
-import httpx
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# OpenAI API configuration
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-OPENAI_API_BASE = "https://api.openai.com/v1"
-WHISPER_ENDPOINT = f"{OPENAI_API_BASE}/audio/transcriptions"
-CHAT_ENDPOINT = f"{OPENAI_API_BASE}/chat/completions"
-
-SYSTEM_PROMPT = (
-    "You are a calm, assertive emergency AI assistant. "
-    "Gather critical details quickly and respond clearly. "
-    "Prioritize life-threatening emergencies. Ask for location, nature of emergency, and if help is needed."
-)
-
-async def transcribe_audio(audio_data):
-    """Transcribe audio using OpenAI's Whisper model via httpx"""
-    try:
-        with open("temp_audio.wav", "wb") as f:
-            f.write(audio_data.get_wav_data())
-        
-        headers = {
-            "Authorization": f"Bearer {OPENAI_API_KEY}"
-        }
-        
-        with open("temp_audio.wav", "rb") as f:
-            files = {
-                "file": ("audio.wav", f, "audio/wav")
-            }
-            data = {
-                "model": "whisper-1"
-            }
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    WHISPER_ENDPOINT,
-                    headers=headers,
-                    files=files,
-                    data=data
-                )
-                response.raise_for_status()
-                result = response.json()
-                return result["text"]
-    finally:
-        if os.path.exists("temp_audio.wav"):
-            os.remove("temp_audio.wav")
-
-async def get_ai_response(transcription, messages):
-    """Get AI response using GPT-4 via httpx"""
-    messages.append({"role": "user", "content": transcription})
-    
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "gpt-4-0613",
-        "messages": messages,
-        "temperature": 0.3
-    }
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(CHAT_ENDPOINT, headers=headers, json=data)
-            response.raise_for_status()
-            result = response.json()
-            bot_message = result["choices"][0]["message"]["content"]
-            messages.append({"role": "assistant", "content": bot_message})
-            return bot_message
-    except Exception as e:
-        print(f"Error getting AI response: {e}")
-        return None
+import asyncio
+from src.config import SYSTEM_PROMPT
+from src.transcription import transcribe_audio
+from src.ai_handler import get_ai_response
+from src.tts import text_to_speech, play_audio
 
 async def main():
     # Initialize recognizer
@@ -111,6 +38,16 @@ async def main():
                     ai_response = await get_ai_response(transcription, messages)
                     if ai_response:
                         print(f"AI: {ai_response}")
+                        
+                        # Convert AI response to speech and play it
+                        audio_file = "ai_response.mp3"
+                        if await text_to_speech(ai_response, audio_file):
+                            play_audio(audio_file)
+                            # Clean up the audio file after playing
+                            try:
+                                os.remove(audio_file)
+                            except:
+                                pass
                 
             except sr.WaitTimeoutError:
                 continue
@@ -122,5 +59,4 @@ async def main():
                 continue
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main()) 
