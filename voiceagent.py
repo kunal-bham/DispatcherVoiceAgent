@@ -7,15 +7,14 @@ from elevenlabs.client import ElevenLabs
 from elevenlabs import stream
 import ollama
 
-# Get API key from environment variable
-api_key = os.getenv("ASSEMBLYAI_API_KEY")
-if not api_key:
-    raise ValueError("Please set the ASSEMBLYAI_API_KEY environment variable")
+# Step 1: Speech to Text User to AI
+# Step 2: Real-Time Transcription with AssemblyAI  
+# Step 3: AI Response with GPT
+# Step 4: Live Audio Streaming. Text-to-Speech with ElevenLabs
 
-aai.settings.api_key = api_key
-transcriber = aai.Transcriber()
 
-transcript = transcriber.transcribe("https://assembly.ai/news.mp4")
-# transcript = transcriber.transcribe("./my-local-audio-file.wav")
 
-print(transcript.text)
+
+
+
+
