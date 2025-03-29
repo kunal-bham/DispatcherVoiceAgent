@@ -28,45 +28,63 @@ def check_for_input(timeout):
     return has_input
 
 async def get_ai_response(transcription, messages):
-    """Get AI response using GPT-4 via httpx with Alloy configuration"""
-    messages.append({"role": "user", "content": transcription})
+    """Get AI response using GPT-3.5-turbo via httpx with Alloy configuration"""
+    # Create a copy of messages to avoid modifying the original
+    current_messages = messages.copy()
+    current_messages.append({"role": "user", "content": transcription})
+    
+    # Debug: Print API key prefix and endpoint
+    print(f"\nDebug - API Key prefix: {OPENAI_API_KEY[:10]}...")
+    print(f"Debug - Endpoint: {CHAT_ENDPOINT}")
     
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
     }
     
-    # Apply Alloy configuration settings
+    # Simplified request data with minimal parameters
     data = {
-        "model": "gpt-4-0613",
-        "messages": messages,
-        **ALLOY_CONFIG["response_settings"]
+        "model": "gpt-3.5-turbo",
+        "messages": current_messages,
+        "max_tokens": 100,  # Reduced from 150
+        "temperature": 0.7
     }
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
+            # Debug: Print request data
+            print(f"Debug - Request data: {data}")
+            
             response = await client.post(CHAT_ENDPOINT, headers=headers, json=data)
             
+            # Debug: Print response status and headers
+            print(f"Debug - Response status: {response.status_code}")
+            print(f"Debug - Response headers: {dict(response.headers)}")
+            
             if response.status_code == 429:
-                print("\nRate limit reached. Please wait a moment before trying again.")
-                return None
+                print("\nRate limit reached. Waiting 60 seconds before retrying...")
+                await asyncio.sleep(60)  # Wait 60 seconds before retrying
+                return await get_ai_response(transcription, messages)  # Retry the request
                 
             response.raise_for_status()
             result = response.json()
             bot_message = result["choices"][0]["message"]["content"]
             
             # Apply conversation style based on context
-            if not messages[-2]["role"] == "assistant":  # First response
+            if not messages[-1]["role"] == "assistant":  # First response
                 bot_message = ALLOY_CONFIG["conversation_style"]["greeting"] + " " + bot_message
             elif "?" in transcription:  # Question detected
                 bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
             
+            # Only append to messages if the request was successful
             messages.append({"role": "assistant", "content": bot_message})
             return bot_message
     except httpx.HTTPError as e:
         print(f"\nError getting AI response: {e}")
         if "429" in str(e):
-            print("Rate limit reached. Please wait a moment before trying again.")
+            print("Rate limit reached. Waiting 60 seconds before retrying...")
+            await asyncio.sleep(60)  # Wait 60 seconds before retrying
+            return await get_ai_response(transcription, messages)  # Retry the request
         return None
     except Exception as e:
         print(f"\nError getting AI response: {e}")
