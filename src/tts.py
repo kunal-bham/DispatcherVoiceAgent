@@ -20,12 +20,12 @@ async def text_to_speech(text: str, output_file: str = "response.mp3"):
         }
         
         data = {
-            "model": "tts-1-hd",  # Using HD model for better quality
+            "model": "tts-1",  # Using standard model for faster processing
             "input": text,
             "voice": "nova"  # Using 'nova' voice which is optimized for natural speech
         }
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:  # Set explicit timeout
             response = await client.post(TTS_ENDPOINT, headers=headers, json=data)
             response.raise_for_status()
             

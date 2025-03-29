@@ -17,10 +17,13 @@ async def transcribe_audio(audio_data):
                 "file": ("audio.wav", f, "audio/wav")
             }
             data = {
-                "model": "whisper-1"
+                "model": "whisper-1",
+                "response_format": "text",
+                "language": "en",
+                "temperature": 0.0
             }
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     WHISPER_ENDPOINT,
                     headers=headers,
@@ -28,8 +31,7 @@ async def transcribe_audio(audio_data):
                     data=data
                 )
                 response.raise_for_status()
-                result = response.json()
-                return result["text"]
+                return response.text.strip()
     finally:
         if os.path.exists("temp_audio.wav"):
             os.remove("temp_audio.wav") 
