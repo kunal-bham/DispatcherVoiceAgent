@@ -5,8 +5,10 @@ import time
 import sys
 import select
 
-load_dotenv()  # Load environment variables from .env file
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")                    
+client = OpenAI(api_key=api_key)
 
 
 SYSTEM_PROMPT = (
@@ -26,7 +28,7 @@ def generate_question():
         temperature=0.3)
         bot_message = response.choices[0].message.content
         messages.append({"role": "assistant", "content": bot_message})
-        print(f"AI: {bot_message}\n")
+        print(f"\nAI: {bot_message}\n")
         print("You: ", end='', flush=True)
     except Exception as e:
         print(f"Error: {e}\n")
