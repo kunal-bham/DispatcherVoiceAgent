@@ -33,10 +33,6 @@ async def get_ai_response(transcription, messages):
     current_messages = messages.copy()
     current_messages.append({"role": "user", "content": transcription})
     
-    # Debug: Print API key prefix and endpoint
-    print(f"\nDebug - API Key prefix: {OPENAI_API_KEY[:10]}...")
-    print(f"Debug - Endpoint: {CHAT_ENDPOINT}")
-    
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
