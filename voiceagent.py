@@ -3,6 +3,9 @@
 
 import os
 import assemblyai as aai
+from elevenlabs.client import ElevenLabs
+from elevenlabs import stream
+import ollama
 
 # Get API key from environment variable
 api_key = os.getenv("ASSEMBLYAI_API_KEY")
