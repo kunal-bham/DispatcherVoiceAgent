@@ -1,4 +1,7 @@
+assemblyai[extras]>=0.17.0
+ollama
+elevenlabs
+openai>=1.69.0
+python-dotenv==1.0.0
 SpeechRecognition==3.10.0
 pyaudio==0.2.13
-openai==1.12.0
-python-dotenv==1.0.0
