@@ -12,7 +12,18 @@ import ollama
 # Step 3: AI Response with GPT
 # Step 4: Live Audio Streaming. Text-to-Speech with ElevenLabs
 
+class AIVoiceAgent:
+    def __init__(self):
+        aai.settings.api_key = "ASSEMBLYAI_API_KEY"
+        self.client = ElevenLabs(
+            api_key = "ELEVENLABS_API_KEY"
+        )
 
+        self.transcriber = None
+
+        self.full_transcript = [
+            {"role":"system", "content":"You are a language model, answer the questions being asked in less than 300 characters."},
+        ]
 
 
 
