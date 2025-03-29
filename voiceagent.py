@@ -1,9 +1,15 @@
 # `pip3 install assemblyai` (macOS)
 # `pip install assemblyai` (Windows)
 
+import os
 import assemblyai as aai
 
-aai.settings.api_key = "ad6e605c811a49adb5c73a4c4a90dee6"
+# Get API key from environment variable
+api_key = os.getenv("ASSEMBLYAI_API_KEY")
+if not api_key:
+    raise ValueError("Please set the ASSEMBLYAI_API_KEY environment variable")
+
+aai.settings.api_key = api_key
 transcriber = aai.Transcriber()
 
 transcript = transcriber.transcribe("https://assembly.ai/news.mp4")
