@@ -6,7 +6,7 @@ TTS_ENDPOINT = f"{OPENAI_API_BASE}/audio/speech"
 
 async def text_to_speech(text: str, output_file: str = "response.mp3"):
     """
-    Convert text to speech using OpenAI's TTS API
+    Convert text to speech using OpenAI's TTS API with optimized settings for natural sound
     Args:
         text: The text to convert to speech
         output_file: The output file path for the audio
@@ -20,9 +20,9 @@ async def text_to_speech(text: str, output_file: str = "response.mp3"):
         }
         
         data = {
-            "model": "tts-1",
+            "model": "tts-1-hd",  # Using HD model for better quality
             "input": text,
-            "voice": "alloy"  # You can also use "echo", "fable", "onyx", "nova", "shimmer"
+            "voice": "nova"  # Using 'nova' voice which is optimized for natural speech
         }
         
         async with httpx.AsyncClient() as client:
