@@ -1,11 +1,17 @@
 import speech_recognition as sr
 import asyncio
 import time
-from src.config import SYSTEM_PROMPT
-from src.transcription import transcribe_audio
-from src.ai_handler import get_ai_response
-from src.tts import text_to_speech, play_audio
-from src.alloy_config import ALLOY_CONFIG
+import os
+import sys
+
+# Add src directory to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+from config import SYSTEM_PROMPT
+from transcription import transcribe_audio
+from ai_handler import get_ai_response
+from tts import text_to_speech, play_audio
+from alloy_config import ALLOY_CONFIG
 
 async def main():
     # Start overall timing
