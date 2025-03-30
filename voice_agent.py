@@ -8,6 +8,9 @@ from src.tts import text_to_speech, play_audio
 from src.alloy_config import ALLOY_CONFIG
 
 async def main():
+    # Start overall timing
+    total_start_time = time.time()
+    
     # Initialize recognizer
     recognizer = sr.Recognizer()
     
@@ -22,10 +25,14 @@ async def main():
     with sr.Microphone() as source:
         # Adjust for ambient noise
         print("Adjusting for ambient noise... Please wait...")
+        noise_start_time = time.time()
         recognizer.adjust_for_ambient_noise(source, duration=2)
+        noise_time = time.time() - noise_start_time
+        print(f"Noise adjustment time: {noise_time:.2f} seconds")
         print("Ready! Speak now...")
         
         # Start with initial greeting
+        greeting_start_time = time.time()
         initial_greeting = ALLOY_CONFIG["conversation_style"]["greeting"]
         print(f"AI: {initial_greeting}")
         audio_file = "ai_response.mp3"
@@ -35,19 +42,24 @@ async def main():
                 os.remove(audio_file)
             except:
                 pass
+        greeting_time = time.time() - greeting_start_time
+        print(f"Initial greeting time: {greeting_time:.2f} seconds")
         
         while True:
             try:
                 # Listen for audio input with adjusted parameters
                 print("\nListening...")
+                listen_start_time = time.time()
                 try:
                     audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
                 except sr.WaitTimeoutError:
                     print("No speech detected. Please try again.")
                     continue
+                listen_time = time.time() - listen_start_time
+                print(f"Listening time: {listen_time:.2f} seconds")
                 
                 # Start timing the entire response process
-                total_start_time = time.time()
+                response_start_time = time.time()
                 
                 # Transcribe the audio
                 transcribe_start_time = time.time()
@@ -80,9 +92,13 @@ async def main():
                         tts_time = time.time() - tts_start_time
                         print(f"TTS processing time: {tts_time:.2f} seconds")
                         
-                        # Print total time
-                        total_time = time.time() - total_start_time
-                        print(f"\nTotal response time: {total_time:.2f} seconds")
+                        # Print total response time
+                        response_time = time.time() - response_start_time
+                        print(f"\nTotal response time: {response_time:.2f} seconds")
+                        
+                        # Print cumulative time
+                        cumulative_time = time.time() - total_start_time
+                        print(f"Cumulative time: {cumulative_time:.2f} seconds")
                 
             except KeyboardInterrupt:
                 print("\nStopping the voice agent...")

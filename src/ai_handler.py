@@ -23,6 +23,7 @@ def check_for_input(timeout):
 
 async def get_ai_response(transcription, messages):
     """Get AI response using GPT-4 via httpx with Alloy configuration"""
+    api_start_time = time.time()
     messages.append({"role": "user", "content": transcription})
     
     headers = {
@@ -39,7 +40,11 @@ async def get_ai_response(transcription, messages):
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
+            request_start_time = time.time()
             response = await client.post(CHAT_ENDPOINT, headers=headers, json=data)
+            request_time = time.time() - request_start_time
+            print(f"API request time: {request_time:.2f} seconds")
+            
             response.raise_for_status()
             result = response.json()
             bot_message = result["choices"][0]["message"]["content"]
@@ -49,6 +54,8 @@ async def get_ai_response(transcription, messages):
                 bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
             
             messages.append({"role": "assistant", "content": bot_message})
+            total_api_time = time.time() - api_start_time
+            print(f"Total API processing time: {total_api_time:.2f} seconds")
             return bot_message
     except Exception as e:
         print(f"Error getting AI response: {e}")
@@ -56,6 +63,7 @@ async def get_ai_response(transcription, messages):
 
 async def emergency_chat():
     """Main emergency chat loop with Alloy personality"""
+    total_start_time = time.time()
     print("\nEmergency Assistant is ready. Type your messages below (type 'exit' to quit):\n")
     print("You: ", end='', flush=True)
     count = 0
@@ -84,4 +92,7 @@ async def emergency_chat():
             break
         except Exception as e:
             print(f"Error: {e}\n")
-            break 
+            break
+    
+    total_time = time.time() - total_start_time
+    print(f"\nTotal conversation time: {total_time:.2f} seconds") 
