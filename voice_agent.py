@@ -25,12 +25,15 @@ async def main():
         {"role": "system", "content": SYSTEM_PROMPT},
     ]
     
+    # Initialize exchange counter
+    exchange_count = 0
+    
     # Initialize message summary
     message_summary = []
 
     def get_summary():
         return message_summary
-    
+
     print("Starting voice-based emergency assistant...")
     print("Press Ctrl+C to stop")
     
@@ -57,7 +60,7 @@ async def main():
         greeting_time = time.time() - greeting_start_time
         print(f"Initial greeting time: {greeting_time:.2f} seconds")
         
-        while True:
+        while exchange_count < 2:
             try:
                 # Listen for audio input with adjusted parameters
                 print("\nListening...")
@@ -107,6 +110,10 @@ async def main():
                         tts_time = time.time() - tts_start_time
                         print(f"TTS processing time: {tts_time:.2f} seconds")
                         
+                        # Increment exchange count
+                        exchange_count += 1
+                        print(f"Exchange count: {exchange_count}")
+                        
                         # Print total response time
                         response_time = time.time() - response_start_time
                         print(f"\nTotal response time: {response_time:.2f} seconds")
@@ -114,11 +121,22 @@ async def main():
                         # Print cumulative time
                         cumulative_time = time.time() - total_start_time
                         print(f"Cumulative time: {cumulative_time:.2f} seconds")
-                        
+
                         # Print message summary after each exchange
                         print("\nMessage Summary:")
                         print("---------------")
                         print(" ".join(message_summary))
+
+                        # If this was the last exchange, wait for final response
+                        if exchange_count >= 4:
+                            print("\nWaiting for final response...")
+                            try:
+                                final_audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
+                                final_transcription = await transcribe_audio(final_audio)
+                                if final_transcription:
+                                    print(f"\nFinal response: {final_transcription}")
+                            except Exception as e:
+                                print(f"Error getting final response: {e}")
                 
             except KeyboardInterrupt:
                 print("\nStopping the voice agent...")
@@ -130,6 +148,17 @@ async def main():
             except Exception as e:
                 print(f"An error occurred: {e}")
                 continue
+        
+        # Print closing message when we exit the loop
+        print("Transferring to hotline...")
+        # Convert closing message to speech and play it
+        audio_file = "ai_response.mp3"
+        if await text_to_speech("A human dispatcher is now available. I'm transferring your call to them...", audio_file):
+            play_audio(audio_file)
+            try:
+                os.remove(audio_file)
+            except:
+                pass
 
 if __name__ == "__main__":
     asyncio.run(main()) 
