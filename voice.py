@@ -6,6 +6,7 @@ copy forwarding link onto webhook with /voice on Twilio
 
 from flask import Flask, request, Response
 from twilio.twiml.voice_response import VoiceResponse
+from src.ai_handler import get_ai_response, messages
 
 app = Flask(__name__)
 
@@ -38,30 +39,28 @@ def handle_recording():
     
     # Create a new TwiML response
     response = VoiceResponse()
-    
-    # Play back the recording
-    #response.play(recording_url)
-    
-    # Add confirmation message
-    response.say("Thank you. We've received your message and will process it shortly.")
+    response.say("Thank you. We're processing your message.")
     
     return Response(str(response), mimetype='text/xml')
 
 @app.route("/transcription-callback", methods=['POST'])
-def transcription_callback():
+async def transcription_callback():
     transcription = request.form.get('TranscriptionText')
     if transcription:
-        print(f"Transcription: {transcription}")
-        # Create a new TwiML response to speak the transcription
+        print(f"Transcription received: {transcription}")
+        # Get AI response
+        ai_response = await get_ai_response(transcription, messages)
+        print(f"AI Response: {ai_response}")
+        
+        # Create a new TwiML response to speak the AI response
         response = VoiceResponse()
-        #response.say(f"I heard you say: {transcription}")
+        response.say(ai_response)
         return Response(str(response), mimetype='text/xml')
     else:
         print("No transcription received")
         response = VoiceResponse()
-        #response.say("I'm sorry, but I couldn't understand what you said.")
+        response.say("I'm sorry, but I couldn't understand what you said.")
         return Response(str(response), mimetype='text/xml')
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
