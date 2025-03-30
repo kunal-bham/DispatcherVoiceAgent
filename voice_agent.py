@@ -142,8 +142,26 @@ async def main():
                                 if final_transcription:
                                     print(f"\nFinal response: {final_transcription}")
                                     message_summary.append(final_transcription)
+                                    
+                                    # Store conversation in MongoDB after final response
+                                    print("\nStoring conversation in MongoDB...")
+                                    try:
+                                        await store_conversation(message_summary)
+                                        print("Conversation stored successfully")
+                                    except Exception as e:
+                                        print(f"Error storing conversation: {e}")
+                                    
+                                    # Break out of the loop after storing
+                                    break
                             except Exception as e:
                                 print(f"Error getting final response: {e}")
+                                # Try to store conversation even if final response fails
+                                try:
+                                    await store_conversation(message_summary)
+                                    print("Conversation stored successfully")
+                                except Exception as store_error:
+                                    print(f"Error storing conversation: {store_error}")
+                                break
                 
             except KeyboardInterrupt:
                 print("\n=== KEYBOARD INTERRUPT DETECTED ===")
@@ -152,6 +170,7 @@ async def main():
                 print("\nFinal Message Summary:")
                 print("---------------------")
                 print(get_summary())
+                '''
                 print("\nAttempting to store conversation...")
                 try:
                     # Store the conversation with both raw messages and summary
@@ -160,8 +179,9 @@ async def main():
                 except Exception as e:
                     print(f"Error during storage: {e}")
                 finally:
+                '''              
                     # Ensure we break out of the loop
-                    break
+                break
             except Exception as e:
                 print(f"\n=== ERROR DETECTED ===")
                 print(f"An error occurred: {e}")
