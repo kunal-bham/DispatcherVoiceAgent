@@ -19,7 +19,16 @@ async def get_ai_response(transcription, messages, detected_language="en"):
     current_messages = messages.copy()
     
     # Add language instruction to system prompt
-    language_prompt = f"Please respond in {detected_language} language. "
+    if detected_language == "es":
+        language_prompt = (
+            "Por favor, responde en español de manera profesional y clara. "
+            "Usa un tono formal y empático, apropiado para una operadora de emergencias. "
+            "Asegúrate de usar vocabulario médico y de emergencia preciso en español. "
+            "Mantén las respuestas concisas pero completas. "
+        )
+    else:
+        language_prompt = f"Please respond in {detected_language} language. "
+    
     current_messages[0]["content"] = language_prompt + current_messages[0]["content"]
     
     current_messages.append({"role": "user", "content": transcription})

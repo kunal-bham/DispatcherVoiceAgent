@@ -33,7 +33,7 @@ def get_tts(language="en"):
             # Map languages to their corresponding TTS models
             model_map = {
                 "en": "tts_models/en/ljspeech/fast_pitch",
-                "es": "tts_models/es/mai/tacotron2-DDC",  # Changed to a more reliable Spanish model
+                "es": "tts_models/es/css10/vits",  # Changed to a higher quality Spanish model
                 "fr": "tts_models/fr/css10/vits",
                 "de": "tts_models/de/thorsten/vits",
                 "it": "tts_models/it/mai/tacotron2-DDC",
