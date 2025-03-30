@@ -135,7 +135,7 @@ async def main():
         print("Transferring to hotline...")
         # Convert closing message to speech and play it
         audio_file = "ai_response.mp3"
-        if await text_to_speech("Transferring to hotline...", audio_file):
+        if await text_to_speech("A human dispatcher is now available. I'm transferring your call to them...", audio_file):
             play_audio(audio_file)
             try:
                 os.remove(audio_file)
