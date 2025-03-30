@@ -1,9 +1,6 @@
 import os
 import httpx
 import asyncio
-import time
-import sys
-import select
 from dotenv import load_dotenv
 from config import SYSTEM_PROMPT, OPENAI_API_KEY, CHAT_ENDPOINT
 from alloy_config import ALLOY_CONFIG
@@ -15,17 +12,6 @@ load_dotenv()
 messages = [
     {"role": "system", "content": SYSTEM_PROMPT},
 ]
-
-def check_for_input(timeout):
-    """Check if there is input available within the timeout period"""
-    start_time = time.time()
-    has_input = False
-    
-    while time.time() - start_time < timeout:
-        if select.select([sys.stdin], [], [], 0.1)[0]:
-            has_input = True
-            break
-    return has_input
 
 async def get_ai_response(transcription, messages):
     """Get AI response using GPT-3.5-turbo via httpx with Alloy configuration"""
@@ -83,50 +69,4 @@ async def get_ai_response(transcription, messages):
         return None
     except Exception as e:
         print(f"\nError getting AI response: {e}")
-        return None
-
-async def emergency_chat():
-    """Main emergency chat loop with Alloy personality"""
-    print("\nEmergency Assistant is ready. Type your messages below (type 'exit' to quit):\n")
-    
-    # Start with the emergency prompt directly
-    print("AI: 911, what's your emergency?\n")
-    print("You: ", end='', flush=True)
-    
-    exchange_count = 0  # Track number of exchanges
-    print(f"Initial exchange count: {exchange_count}")  # Debug print
-    
-    while exchange_count <= 4:       
-        try:
-            user_input = input().strip()
-            print(f"User input received: {user_input}")  # Debug print
-            
-            if user_input.lower() == 'exit':
-                print(ALLOY_CONFIG["conversation_style"]["closing"])
-                break
-                
-            response = await get_ai_response(user_input, messages)
-            print(f"AI response received: {response}")  # Debug print
-            
-            if response:
-                print(f"\nAI: {response}\n")
-                exchange_count += 1  # Increment after each exchange
-                print(f"Exchange count after increment: {exchange_count}")  # Debug print
-                
-                if exchange_count < 4:  # Only show prompt if we haven't reached 4 exchanges
-                    print("You: ", end='', flush=True)
-            else:
-                print("Failed to get AI response. Please try again.")
-                print("You: ", end='', flush=True)
-        except KeyboardInterrupt:
-            print("\n" + ALLOY_CONFIG["conversation_style"]["closing"])
-            break
-        except Exception as e:
-            print(f"Error: {e}\n")
-            break
-    
-    # Print closing message when we exit the loop
-    print(ALLOY_CONFIG["conversation_style"]["closing"])
-
-if __name__ == "__main__":
-    asyncio.run(emergency_chat()) 
+        return None 
