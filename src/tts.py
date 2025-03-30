@@ -12,7 +12,20 @@ _tts = None
 def get_tts():
     global _tts
     if _tts is None:
-        _tts = TTS(model_name="tts_models/en/ljspeech/fast_pitch", progress_bar=False)
+        try:
+            print("Initializing TTS model...")
+            _tts = TTS(model_name="tts_models/en/ljspeech/fast_pitch", progress_bar=True)
+            print("TTS model initialized successfully")
+        except Exception as e:
+            print(f"Error initializing TTS model: {e}")
+            # Try alternative model if the first one fails
+            try:
+                print("Trying alternative model...")
+                _tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=True)
+                print("Alternative TTS model initialized successfully")
+            except Exception as e2:
+                print(f"Error initializing alternative TTS model: {e2}")
+                raise
     return _tts
 
 def apply_voice_modulation(audio_data, sample_rate):

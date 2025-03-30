@@ -12,7 +12,6 @@ from transcription import transcribe_audio
 from ai_handler import get_ai_response
 from tts import text_to_speech, play_audio
 from alloy_config import ALLOY_CONFIG
-from db_config import save_conversation
 
 async def main():
     # Start overall timing
@@ -28,6 +27,9 @@ async def main():
     
     # Initialize message summary
     message_summary = []
+
+    def get_summary():
+        return message_summary
     
     print("Starting voice-based emergency assistant...")
     print("Press Ctrl+C to stop")
@@ -117,9 +119,6 @@ async def main():
                         print("\nMessage Summary:")
                         print("---------------")
                         print(" ".join(message_summary))
-                        
-                        # Save conversation to MongoDB
-                        await save_conversation(message_summary)
                 
             except KeyboardInterrupt:
                 print("\nStopping the voice agent...")
@@ -127,8 +126,6 @@ async def main():
                 print("\nFinal Message Summary:")
                 print("---------------------")
                 print(" ".join(message_summary))
-                # Save final conversation to MongoDB
-                await save_conversation(message_summary)
                 break
             except Exception as e:
                 print(f"An error occurred: {e}")
