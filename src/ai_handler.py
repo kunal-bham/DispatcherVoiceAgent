@@ -44,10 +44,8 @@ async def get_ai_response(transcription, messages):
             result = response.json()
             bot_message = result["choices"][0]["message"]["content"]
             
-            # Apply conversation style based on context
-            if not messages[-2]["role"] == "assistant":  # First response
-                bot_message = ALLOY_CONFIG["conversation_style"]["greeting"] + " " + bot_message
-            elif "?" in transcription:  # Question detected
+            # Only add acknowledgment for questions, not greetings
+            if "?" in transcription and not messages[-2]["role"] == "assistant":
                 bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
             
             messages.append({"role": "assistant", "content": bot_message})

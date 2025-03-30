@@ -5,6 +5,7 @@ from src.config import SYSTEM_PROMPT
 from src.transcription import transcribe_audio
 from src.ai_handler import get_ai_response
 from src.tts import text_to_speech, play_audio
+from src.alloy_config import ALLOY_CONFIG
 
 async def main():
     # Initialize recognizer
@@ -24,11 +25,26 @@ async def main():
         recognizer.adjust_for_ambient_noise(source, duration=2)
         print("Ready! Speak now...")
         
+        # Start with initial greeting
+        initial_greeting = ALLOY_CONFIG["conversation_style"]["greeting"]
+        print(f"AI: {initial_greeting}")
+        audio_file = "ai_response.mp3"
+        if await text_to_speech(initial_greeting, audio_file):
+            play_audio(audio_file)
+            try:
+                os.remove(audio_file)
+            except:
+                pass
+        
         while True:
             try:
-                # Listen for audio input
+                # Listen for audio input with adjusted parameters
                 print("\nListening...")
-                audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
+                try:
+                    audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
+                except sr.WaitTimeoutError:
+                    print("No speech detected. Please try again.")
+                    continue
                 
                 # Start timing the entire response process
                 total_start_time = time.time()
@@ -68,8 +84,6 @@ async def main():
                         total_time = time.time() - total_start_time
                         print(f"\nTotal response time: {total_time:.2f} seconds")
                 
-            except sr.WaitTimeoutError:
-                continue
             except KeyboardInterrupt:
                 print("\nStopping the voice agent...")
                 break
