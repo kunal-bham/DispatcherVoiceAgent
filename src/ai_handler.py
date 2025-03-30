@@ -1,9 +1,15 @@
+import os
 import httpx
-from .config import OPENAI_API_KEY, CHAT_ENDPOINT, SYSTEM_PROMPT
-from .alloy_config import ALLOY_CONFIG
+import asyncio
 import time
 import sys
 import select
+from dotenv import load_dotenv
+from config import SYSTEM_PROMPT, OPENAI_API_KEY, CHAT_ENDPOINT
+from alloy_config import ALLOY_CONFIG
+
+# Load environment variables
+load_dotenv()
 
 # Initialize messages with system prompt
 messages = [
@@ -22,77 +28,88 @@ def check_for_input(timeout):
     return has_input
 
 async def get_ai_response(transcription, messages):
-    """Get AI response using GPT-4 via httpx with Alloy configuration"""
-    api_start_time = time.time()
-    messages.append({"role": "user", "content": transcription})
+    """Get AI response using GPT-3.5-turbo via httpx with Alloy configuration"""
+    # Create a copy of messages to avoid modifying the original
+    current_messages = messages.copy()
+    current_messages.append({"role": "user", "content": transcription})
     
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
     }
     
-    # Apply Alloy configuration settings
+    # Simplified request data with minimal parameters
     data = {
-        "model": "gpt-4-0613",
-        "messages": messages,
-        **ALLOY_CONFIG["response_settings"]
+        "model": "gpt-3.5-turbo",
+        "messages": current_messages,
+        "max_tokens": 100,  # Reduced from 150
+        "temperature": 0.7
     }
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            request_start_time = time.time()
             response = await client.post(CHAT_ENDPOINT, headers=headers, json=data)
-            request_time = time.time() - request_start_time
-            print(f"API request time: {request_time:.2f} seconds")
             
+            if response.status_code == 429:
+                print("\nRate limit reached. Waiting 60 seconds before retrying...")
+                await asyncio.sleep(60)  # Wait 60 seconds before retrying
+                return await get_ai_response(transcription, messages)  # Retry the request
+                
             response.raise_for_status()
             result = response.json()
             bot_message = result["choices"][0]["message"]["content"]
             
-            # Only add acknowledgment for questions, not greetings
-            if "?" in transcription and not messages[-2]["role"] == "assistant":
+            # Remove any instances of the greeting from the response
+            bot_message = bot_message.replace("911, what's your emergency?", "").strip()
+            
+            # Only show direct response for first message
+            if len(messages) == 1:  # First message (after system prompt)
+                messages.append({"role": "assistant", "content": bot_message})
+                return bot_message
+            
+            # Add conversation style for subsequent messages
+            if "?" in transcription:  # Question detected
                 bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
             
+            # Only append to messages if the request was successful
             messages.append({"role": "assistant", "content": bot_message})
-            total_api_time = time.time() - api_start_time
-            print(f"Total API processing time: {total_api_time:.2f} seconds")
             return bot_message
+    except httpx.HTTPError as e:
+        print(f"\nError getting AI response: {e}")
+        if "429" in str(e):
+            print("Rate limit reached. Waiting 60 seconds before retrying...")
+            await asyncio.sleep(60)  # Wait 60 seconds before retrying
+            return await get_ai_response(transcription, messages)  # Retry the request
+        return None
     except Exception as e:
-        print(f"Error getting AI response: {e}")
+        print(f"\nError getting AI response: {e}")
         return None
 
 async def emergency_chat():
     """Main emergency chat loop with Alloy personality"""
-    total_start_time = time.time()
     print("\nEmergency Assistant is ready. Type your messages below (type 'exit' to quit):\n")
+    
+    # Start with the emergency prompt directly
+    print("AI: 911, what's your emergency?\n")
     print("You: ", end='', flush=True)
-    count = 0
     
     while True:       
         try:
-            if check_for_input(3):
-                user_input = input().strip()
-                if user_input.lower() == 'exit':
-                    print(ALLOY_CONFIG["conversation_style"]["closing"])
-                    break
-                    
-                response = await get_ai_response(user_input, messages)
-                if response:
-                    print(f"\nAI: {response}\n")
-                    print("You: ", end='', flush=True)
-            elif count == 0:
-                print()  # Move to next line
-                response = await get_ai_response("911 what's your emergency?", messages)
-                if response:
-                    print(f"\nAI: {response}\n")
-                    print("You: ", end='', flush=True)
-                    count += 1
+            user_input = input().strip()
+            if user_input.lower() == 'exit':
+                print(ALLOY_CONFIG["conversation_style"]["closing"])
+                break
+                
+            response = await get_ai_response(user_input, messages)
+            if response:
+                print(f"\nAI: {response}\n")
+                print("You: ", end='', flush=True)
         except KeyboardInterrupt:
             print("\n" + ALLOY_CONFIG["conversation_style"]["closing"])
             break
         except Exception as e:
             print(f"Error: {e}\n")
             break
-    
-    total_time = time.time() - total_start_time
-    print(f"\nTotal conversation time: {total_time:.2f} seconds") 
+
+if __name__ == "__main__":
+    asyncio.run(emergency_chat()) 
