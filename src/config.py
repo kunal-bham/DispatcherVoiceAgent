@@ -4,8 +4,17 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Debug: Print current working directory and env file location
+print(f"Current working directory: {os.getcwd()}")
+print(f"Looking for .env file in: {os.path.abspath('.env')}")
+
 # OpenAI API configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+print(f"API Key loaded: {'Yes' if OPENAI_API_KEY else 'No'}")
+if OPENAI_API_KEY:
+    print(f"API Key length: {len(OPENAI_API_KEY)}")
+    print(f"API Key starts with: {OPENAI_API_KEY[:4]}...")
+
 OPENAI_API_BASE = "https://api.openai.com/v1"
 WHISPER_ENDPOINT = f"{OPENAI_API_BASE}/audio/transcriptions"
 CHAT_ENDPOINT = f"{OPENAI_API_BASE}/chat/completions"

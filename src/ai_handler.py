@@ -2,8 +2,8 @@ import os
 import httpx
 import asyncio
 from dotenv import load_dotenv
-from config import SYSTEM_PROMPT, OPENAI_API_KEY, CHAT_ENDPOINT
-from alloy_config import ALLOY_CONFIG
+from src.config import SYSTEM_PROMPT, OPENAI_API_KEY, CHAT_ENDPOINT
+from src.alloy_config import ALLOY_CONFIG
 
 # Load environment variables
 load_dotenv()
