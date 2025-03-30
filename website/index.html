@@ -41,9 +41,27 @@
       font-weight: 400;
       opacity: 0.9;
     }
+    .test-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    .test-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head><body>
   <div id="vanta-bg"></div>
+  <button class="test-button" onclick="testNewEntry()">Test New Entry</button>
   <script>
     VANTA.HALO({
       el: "#vanta-bg",
@@ -64,6 +82,24 @@
       <h1>QuickCall911</h1>
       <div class="subtitle">911 Dispatcher Voice Agent</div>
   </div>
+
+  <script type="module">
+    import dbManager from './src/db.js';
+    import notification from './src/notification.js';
+
+    // Listen for new entries
+    dbManager.addListener((entry) => {
+      notification.show('New entry added: ' + entry.message);
+    });
+
+    // Make the test function available globally
+    window.testNewEntry = function() {
+      dbManager.addEntry({
+        message: 'Test Entry ' + new Date().toLocaleTimeString(),
+        timestamp: new Date()
+      });
+    };
+  </script>
 </body></html>
 
 

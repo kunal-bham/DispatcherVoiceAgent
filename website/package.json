@@ -24,6 +24,10 @@
   ],
   "author": "Teng Bao",
   "license": "MIT",
+  "dependencies": {
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.1.1"
+  },
   "devDependencies": {
     "glslify": "^6.1.0",
     "glslify-loader": "^2.0.0",
