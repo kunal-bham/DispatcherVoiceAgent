@@ -48,14 +48,7 @@ async def get_ai_response(transcription, messages):
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Debug: Print request data
-            print(f"Debug - Request data: {data}")
-            
             response = await client.post(CHAT_ENDPOINT, headers=headers, json=data)
-            
-            # Debug: Print response status and headers
-            print(f"Debug - Response status: {response.status_code}")
-            print(f"Debug - Response headers: {dict(response.headers)}")
             
             if response.status_code == 429:
                 print("\nRate limit reached. Waiting 60 seconds before retrying...")
@@ -66,10 +59,16 @@ async def get_ai_response(transcription, messages):
             result = response.json()
             bot_message = result["choices"][0]["message"]["content"]
             
-            # Apply conversation style based on context
-            if not messages[-1]["role"] == "assistant":  # First response
-                bot_message = ALLOY_CONFIG["conversation_style"]["greeting"] + " " + bot_message
-            elif "?" in transcription:  # Question detected
+            # Remove any instances of the greeting from the response
+            bot_message = bot_message.replace("911, what's your emergency?", "").strip()
+            
+            # Only show direct response for first message
+            if len(messages) == 1:  # First message (after system prompt)
+                messages.append({"role": "assistant", "content": bot_message})
+                return bot_message
+            
+            # Add conversation style for subsequent messages
+            if "?" in transcription:  # Question detected
                 bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
             
             # Only append to messages if the request was successful
@@ -89,28 +88,22 @@ async def get_ai_response(transcription, messages):
 async def emergency_chat():
     """Main emergency chat loop with Alloy personality"""
     print("\nEmergency Assistant is ready. Type your messages below (type 'exit' to quit):\n")
+    
+    # Start with the emergency prompt directly
+    print("AI: 911, what's your emergency?\n")
     print("You: ", end='', flush=True)
-    count = 0
     
     while True:       
         try:
-            if check_for_input(3):
-                user_input = input().strip()
-                if user_input.lower() == 'exit':
-                    print(ALLOY_CONFIG["conversation_style"]["closing"])
-                    break
-                    
-                response = await get_ai_response(user_input, messages)
-                if response:
-                    print(f"\nAI: {response}\n")
-                    print("You: ", end='', flush=True)
-            elif count == 0:
-                print()  # Move to next line
-                response = await get_ai_response("911 what's your emergency?", messages)
-                if response:
-                    print(f"\nAI: {response}\n")
-                    print("You: ", end='', flush=True)
-                    count += 1
+            user_input = input().strip()
+            if user_input.lower() == 'exit':
+                print(ALLOY_CONFIG["conversation_style"]["closing"])
+                break
+                
+            response = await get_ai_response(user_input, messages)
+            if response:
+                print(f"\nAI: {response}\n")
+                print("You: ", end='', flush=True)
         except KeyboardInterrupt:
             print("\n" + ALLOY_CONFIG["conversation_style"]["closing"])
             break
