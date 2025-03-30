@@ -1,37 +1,39 @@
-import os
 import httpx
-from .config import OPENAI_API_KEY, WHISPER_ENDPOINT
+import os
+from config import OPENAI_API_KEY, WHISPER_ENDPOINT
 
 async def transcribe_audio(audio_data):
-    """Transcribe audio using OpenAI's Whisper model via httpx"""
+    """Transcribe audio using OpenAI's Whisper API"""
     try:
-        with open("temp_audio.wav", "wb") as f:
-            f.write(audio_data.get_wav_data())
-        
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}"
         }
         
+        # Save audio data to temporary file
+        with open("temp_audio.wav", "wb") as f:
+            f.write(audio_data.get_wav_data())
+        
+        # Send request to Whisper API
         with open("temp_audio.wav", "rb") as f:
-            files = {
-                "file": ("audio.wav", f, "audio/wav")
-            }
+            files = {"file": ("audio.wav", f, "audio/wav")}
             data = {
                 "model": "whisper-1",
-                "response_format": "text",
-                "language": "en",
-                "temperature": 0.0
+                "response_format": "json",
+                "language": "en"
             }
-            
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    WHISPER_ENDPOINT,
-                    headers=headers,
-                    files=files,
-                    data=data
-                )
+                response = await client.post(WHISPER_ENDPOINT, headers=headers, files=files, data=data)
                 response.raise_for_status()
-                return response.text.strip()
-    finally:
-        if os.path.exists("temp_audio.wav"):
-            os.remove("temp_audio.wav") 
+                result = response.json()
+                transcription = result["text"]
+        
+        # Clean up temporary file
+        try:
+            os.remove("temp_audio.wav")
+        except:
+            pass
+            
+        return transcription
+    except Exception as e:
+        print(f"Error in transcription: {e}")
+        return None 

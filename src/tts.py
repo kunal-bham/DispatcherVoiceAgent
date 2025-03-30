@@ -1,7 +1,7 @@
 import httpx
 import os
-from .config import OPENAI_API_KEY, OPENAI_API_BASE
-from .alloy_config import ALLOY_CONFIG
+from config import OPENAI_API_KEY, OPENAI_API_BASE
+from alloy_config import ALLOY_CONFIG
 import soundfile as sf
 import numpy as np
 from scipy import signal
