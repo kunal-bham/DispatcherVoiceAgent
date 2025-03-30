@@ -24,7 +24,7 @@ ALLOY_CONFIG: Dict[str, Any] = {
         "authority": 0.8,
     },
     "conversation_style": {
-        "greeting": "911, what's your emergency?",
+        "greeting": "Nine One One, what's your emergency?",
         "acknowledgment": "I understand your concern. Let me help you with that.",
         "clarification": "Could you please provide more details about that?",
         "reassurance": "I'm here to assist you. We'll handle this together.",

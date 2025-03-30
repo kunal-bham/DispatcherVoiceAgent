@@ -34,33 +34,33 @@ def apply_voice_modulation(audio_data, sample_rate):
     """
     # Apply pitch variation based on Alloy settings with more natural variation
     pitch_variation = ALLOY_CONFIG["voice_settings"]["pitch"]
-    # Add subtle pitch variation throughout the audio
-    pitch_envelope = np.linspace(0.95, 1.05, len(audio_data))
+    # Add very subtle pitch variation throughout the audio
+    pitch_envelope = np.linspace(0.98, 1.02, len(audio_data))  # Reduced variation
     audio_data = signal.resample(audio_data, int(len(audio_data) * pitch_variation))
     
     # Apply energy modulation with smoother transitions
     energy = ALLOY_CONFIG["voice_settings"]["energy"]
-    # Create a more natural energy envelope with slight variations
-    envelope = np.linspace(0.85, 1.15, len(audio_data))
-    # Add subtle random variations to the envelope
-    envelope += np.random.normal(0, 0.05, len(audio_data))
+    # Create a more stable energy envelope with minimal variations
+    envelope = np.linspace(0.95, 1.05, len(audio_data))  # Reduced variation
+    # Add very subtle random variations to the envelope
+    envelope += np.random.normal(0, 0.02, len(audio_data))  # Reduced random variation
     audio_data = audio_data * envelope
     
-    # Add subtle reverb effect for natural sound
-    delay = int(0.03 * sample_rate)  # Reduced delay for more natural sound
-    decay = 0.2  # Reduced decay for subtler effect
+    # Add very subtle reverb effect for natural sound
+    delay = int(0.01 * sample_rate)  # Reduced delay
+    decay = 0.1  # Reduced decay
     reverb = np.zeros_like(audio_data)
     reverb[delay:] = audio_data[:-delay] * decay
     audio_data = audio_data + reverb
     
-    # Add subtle breath effect with varying intensity
-    breath_intensity = np.random.uniform(0.005, 0.015)
+    # Add very subtle breath effect
+    breath_intensity = np.random.uniform(0.001, 0.005)  # Reduced intensity
     breath = np.random.normal(0, breath_intensity, len(audio_data))
     audio_data = audio_data + breath
     
-    # Add subtle vibrato effect for more human-like quality
+    # Add very subtle vibrato effect
     vibrato_freq = 5  # Hz
-    vibrato_depth = 0.02
+    vibrato_depth = 0.01  # Reduced depth
     t = np.arange(len(audio_data)) / sample_rate
     vibrato = np.sin(2 * np.pi * vibrato_freq * t) * vibrato_depth
     audio_data = audio_data * (1 + vibrato)

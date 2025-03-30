@@ -47,15 +47,10 @@ async def get_ai_response(transcription, messages):
             
             # Remove any instances of the greeting from the response
             bot_message = bot_message.replace("911, what's your emergency?", "").strip()
+            bot_message = bot_message.replace("9-1-1, what's your emergency?", "").strip()
             
-            # Only show direct response for first message
-            if len(messages) == 1:  # First message (after system prompt)
-                messages.append({"role": "assistant", "content": bot_message})
-                return bot_message
-            
-            # Add conversation style for subsequent messages
-            if "?" in transcription:  # Question detected
-                bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
+            # Remove any instances of the acknowledgment phrase
+            bot_message = bot_message.replace(ALLOY_CONFIG["conversation_style"]["acknowledgment"], "").strip()
             
             # Only append to messages if the request was successful
             messages.append({"role": "assistant", "content": bot_message})

@@ -3,6 +3,7 @@ import asyncio
 import time
 import os
 import sys
+from dotenv import load_dotenv
 
 # Add src directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -12,6 +13,11 @@ from transcription import transcribe_audio
 from ai_handler import get_ai_response
 from tts import text_to_speech, play_audio
 from alloy_config import ALLOY_CONFIG
+from store_message import store_conversation
+from gen_summary import generate_summary
+
+# Load environment variables
+load_dotenv()
 
 async def main():
     # Start overall timing
@@ -32,8 +38,8 @@ async def main():
     message_summary = []
 
     def get_summary():
-        return message_summary
-
+        return " ".join(message_summary)
+    
     print("Starting voice-based emergency assistant...")
     print("Press Ctrl+C to stop")
     
@@ -125,28 +131,44 @@ async def main():
                         # Print message summary after each exchange
                         print("\nMessage Summary:")
                         print("---------------")
-                        print(" ".join(message_summary))
+                        print(get_summary())
 
                         # If this was the last exchange, wait for final response
-                        if exchange_count >= 4:
+                        if exchange_count >= 2:
                             print("\nWaiting for final response...")
                             try:
                                 final_audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
                                 final_transcription = await transcribe_audio(final_audio)
                                 if final_transcription:
                                     print(f"\nFinal response: {final_transcription}")
+                                    message_summary.append(final_transcription)
                             except Exception as e:
                                 print(f"Error getting final response: {e}")
                 
             except KeyboardInterrupt:
-                print("\nStopping the voice agent...")
+                print("\n=== KEYBOARD INTERRUPT DETECTED ===")
+                print("Stopping the voice agent...")
                 # Print final message summary
                 print("\nFinal Message Summary:")
                 print("---------------------")
-                print(" ".join(message_summary))
-                break
+                print(get_summary())
+                print("\nAttempting to store conversation...")
+                try:
+                    # Store the conversation with both raw messages and summary
+                    await store_conversation(message_summary)
+                    print("Storage process completed")
+                except Exception as e:
+                    print(f"Error during storage: {e}")
+                finally:
+                    # Ensure we break out of the loop
+                    break
             except Exception as e:
+                print(f"\n=== ERROR DETECTED ===")
                 print(f"An error occurred: {e}")
+                print("Attempting to store conversation...")
+                # Store the conversation even if there's an error
+                await store_conversation(message_summary)
+                print("Storage process completed")
                 continue
         
         # Print closing message when we exit the loop
