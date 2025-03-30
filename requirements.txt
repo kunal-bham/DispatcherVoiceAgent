@@ -7,3 +7,5 @@ scipy==1.11.2
 TTS==0.21.1
 pymongo==4.6.1
 httpx==0.26.0
+dnspython==2.5.0  
+pymongo[srv]==4.6.1

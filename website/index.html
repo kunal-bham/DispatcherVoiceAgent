@@ -87,17 +87,21 @@
     import dbManager from './src/db.js';
     import notification from './src/notification.js';
 
-    // Listen for new entries
+    // Listen for new entries from MongoDB
     dbManager.addListener((entry) => {
       notification.show('New entry added: ' + entry.message);
     });
 
     // Make the test function available globally
-    window.testNewEntry = function() {
-      dbManager.addEntry({
-        message: 'Test Entry ' + new Date().toLocaleTimeString(),
-        timestamp: new Date()
-      });
+    window.testNewEntry = async function() {
+      try {
+        await dbManager.addEntry({
+          message: 'Test Entry ' + new Date().toLocaleTimeString(),
+          timestamp: new Date()
+        });
+      } catch (error) {
+        console.error('Error adding test entry:', error);
+      }
     };
   </script>
 </body></html>
