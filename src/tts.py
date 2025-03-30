@@ -4,20 +4,73 @@ import soundfile as sf
 import numpy as np
 from scipy import signal
 from alloy_config import ALLOY_CONFIG
+import unicodedata
 
 # Initialize TTS with a high-quality model only once
 # Using FastSpeech2 model which is more reliable and natural sounding
 _tts = None
+_current_language = None
+
+def preprocess_text(text: str) -> str:
+    """
+    Preprocess text to handle special characters and normalize unicode
+    """
+    # Normalize unicode characters
+    text = unicodedata.normalize('NFKC', text)
+    
+    # Replace special characters with their standard equivalents
+    replacements = {
+        '¿': '?',
+        '¡': '!',
+        '«': '"',
+        '»': '"',
+        '–': '-',
+        '—': '-',
+        '…': '...',
+        '„': '"',
+        '‟': '"',
+        '‚': "'",
+        '‛': "'",
+        '′': "'",
+        '″': '"',
+        '‴': '"',
+        '‵': "'",
+        '‶': '"',
+        '‷': '"',
+        '‹': '<',
+        '›': '>',
+        '«': '"',
+        '»': '"',
+        '„': '"',
+        '‟': '"',
+        '‚': "'",
+        '‛': "'",
+        '′': "'",
+        '″': '"',
+        '‴': '"',
+        '‵': "'",
+        '‶': '"',
+        '‷': '"',
+        '‹': '<',
+        '›': '>'
+    }
+    
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    
+    return text
 
 def get_tts(language="en"):
-    global _tts
-    if _tts is None:
+    global _tts, _current_language
+    
+    # Only reinitialize if language changes
+    if _tts is None or _current_language != language:
         try:
             print(f"Initializing TTS model for language: {language}")
             # Map languages to their corresponding TTS models
             model_map = {
                 "en": "tts_models/en/ljspeech/fast_pitch",
-                "es": "tts_models/es/css10/vits",
+                "es": "tts_models/es/mai/tacotron2-DDC",  # Changed to a more reliable Spanish model
                 "fr": "tts_models/fr/css10/vits",
                 "de": "tts_models/de/thorsten/vits",
                 "it": "tts_models/it/mai/tacotron2-DDC",
@@ -34,6 +87,7 @@ def get_tts(language="en"):
             # Get the appropriate model for the language, default to English if not supported
             model_name = model_map.get(language, "tts_models/en/ljspeech/fast_pitch")
             _tts = TTS(model_name=model_name, progress_bar=True)
+            _current_language = language
             print(f"TTS model initialized successfully for {language}")
         except Exception as e:
             print(f"Error initializing TTS model: {e}")
@@ -41,6 +95,7 @@ def get_tts(language="en"):
             try:
                 print("Trying alternative model...")
                 _tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=True)
+                _current_language = "en"  # Fallback to English
                 print("Alternative TTS model initialized successfully")
             except Exception as e2:
                 print(f"Error initializing alternative TTS model: {e2}")
@@ -100,12 +155,15 @@ async def text_to_speech(text: str, output_file: str = "response.mp3", language:
         bool: True if successful, False otherwise
     """
     try:
+        # Preprocess the text to handle special characters
+        processed_text = preprocess_text(text)
+        
         # Get the TTS model instance for the specified language
         tts = get_tts(language)
         
         # Generate speech with Coqui TTS
         tts.tts_to_file(
-            text=text,
+            text=processed_text,
             file_path=output_file,
             speed=ALLOY_CONFIG["voice_settings"]["speed"],
             pitch=ALLOY_CONFIG["voice_settings"]["pitch"]
@@ -113,12 +171,19 @@ async def text_to_speech(text: str, output_file: str = "response.mp3", language:
         
         # Apply voice modulation with Alloy settings
         audio_data, sample_rate = sf.read(output_file)
+        
+        # Convert stereo to mono if needed
+        if len(audio_data.shape) > 1:
+            audio_data = np.mean(audio_data, axis=1)
+        
         modulated_audio = apply_voice_modulation(audio_data, sample_rate)
         sf.write(output_file, modulated_audio, sample_rate)
         
         return True
     except Exception as e:
         print(f"Error in text-to-speech conversion: {e}")
+        print(f"Original text: {text}")
+        print(f"Processed text: {processed_text}")
         return False
 
 def play_audio(file_path: str):
