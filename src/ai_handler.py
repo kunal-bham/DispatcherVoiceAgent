@@ -93,16 +93,30 @@ async def emergency_chat():
     print("AI: 911, what's your emergency?\n")
     print("You: ", end='', flush=True)
     
-    while True:       
+    exchange_count = 0  # Track number of exchanges
+    print(f"Initial exchange count: {exchange_count}")  # Debug print
+    
+    while exchange_count <= 4:       
         try:
             user_input = input().strip()
+            print(f"User input received: {user_input}")  # Debug print
+            
             if user_input.lower() == 'exit':
                 print(ALLOY_CONFIG["conversation_style"]["closing"])
                 break
                 
             response = await get_ai_response(user_input, messages)
+            print(f"AI response received: {response}")  # Debug print
+            
             if response:
                 print(f"\nAI: {response}\n")
+                exchange_count += 1  # Increment after each exchange
+                print(f"Exchange count after increment: {exchange_count}")  # Debug print
+                
+                if exchange_count < 4:  # Only show prompt if we haven't reached 4 exchanges
+                    print("You: ", end='', flush=True)
+            else:
+                print("Failed to get AI response. Please try again.")
                 print("You: ", end='', flush=True)
         except KeyboardInterrupt:
             print("\n" + ALLOY_CONFIG["conversation_style"]["closing"])
@@ -110,6 +124,9 @@ async def emergency_chat():
         except Exception as e:
             print(f"Error: {e}\n")
             break
+    
+    # Print closing message when we exit the loop
+    print(ALLOY_CONFIG["conversation_style"]["closing"])
 
 if __name__ == "__main__":
     asyncio.run(emergency_chat()) 
