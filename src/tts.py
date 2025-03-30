@@ -1,12 +1,12 @@
-import httpx
 import os
-from .config import OPENAI_API_KEY, OPENAI_API_BASE
-from .alloy_config import ALLOY_CONFIG
+from TTS.api import TTS
 import soundfile as sf
 import numpy as np
 from scipy import signal
+from .alloy_config import ALLOY_CONFIG
 
-TTS_ENDPOINT = f"{OPENAI_API_BASE}/audio/speech"
+# Initialize TTS with a high-quality model
+tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
 
 def apply_voice_modulation(audio_data, sample_rate):
     """
@@ -31,7 +31,7 @@ def apply_voice_modulation(audio_data, sample_rate):
 
 async def text_to_speech(text: str, output_file: str = "response.mp3"):
     """
-    Convert text to speech using OpenAI's TTS API with Alloy's voice settings
+    Convert text to speech using Coqui TTS with Alloy's voice settings
     Args:
         text: The text to convert to speech
         output_file: The output file path for the audio
@@ -39,33 +39,19 @@ async def text_to_speech(text: str, output_file: str = "response.mp3"):
         bool: True if successful, False otherwise
     """
     try:
-        headers = {
-            "Authorization": f"Bearer {OPENAI_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        # Generate speech with Coqui TTS
+        tts.tts_to_file(
+            text=text,
+            file_path=output_file,
+            speed=ALLOY_CONFIG["voice_settings"]["speed"]
+        )
         
-        # Apply Alloy's voice settings
-        data = {
-            "model": "tts-1-hd",
-            "input": text,
-            "voice": "nova",
-            "speed": ALLOY_CONFIG["voice_settings"]["speed"]
-        }
+        # Apply voice modulation with Alloy settings
+        audio_data, sample_rate = sf.read(output_file)
+        modulated_audio = apply_voice_modulation(audio_data, sample_rate)
+        sf.write(output_file, modulated_audio, sample_rate)
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(TTS_ENDPOINT, headers=headers, json=data)
-            response.raise_for_status()
-     
-            # Save the audio file
-            with open(output_file, "wb") as f:
-                f.write(response.content)
-            
-            # Apply voice modulation with Alloy settings
-            audio_data, sample_rate = sf.read(output_file)
-            modulated_audio = apply_voice_modulation(audio_data, sample_rate)
-            sf.write(output_file, modulated_audio, sample_rate)
-            
-            return True
+        return True
     except Exception as e:
         print(f"Error in text-to-speech conversion: {e}")
         return False
