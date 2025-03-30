@@ -13,10 +13,15 @@ messages = [
     {"role": "system", "content": SYSTEM_PROMPT},
 ]
 
-async def get_ai_response(transcription, messages):
+async def get_ai_response(transcription, messages, detected_language="en"):
     """Get AI response using GPT-3.5-turbo via httpx with Alloy configuration"""
     # Create a copy of messages to avoid modifying the original
     current_messages = messages.copy()
+    
+    # Add language instruction to system prompt
+    language_prompt = f"Please respond in {detected_language} language. "
+    current_messages[0]["content"] = language_prompt + current_messages[0]["content"]
+    
     current_messages.append({"role": "user", "content": transcription})
     
     headers = {

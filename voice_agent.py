@@ -37,6 +37,9 @@ async def main():
     
     # Initialize message summary
     message_summary = []
+    
+    # Initialize detected language
+    detected_language = "en"
 
     def get_summary():
         return " ".join(message_summary)
@@ -62,7 +65,7 @@ async def main():
         print(f"AI: {initial_greeting}")
         message_summary.append(initial_greeting)
         audio_file = "ai_response.mp3"
-        if await text_to_speech(initial_greeting, audio_file):
+        if await text_to_speech(initial_greeting, audio_file, detected_language):
             play_audio(audio_file)
             try:
                 os.remove(audio_file)
@@ -90,7 +93,10 @@ async def main():
                 # Transcribe the audio
                 print("\n=== TRANSCRIBING AUDIO ===")
                 transcribe_start_time = time.time()
-                transcription = await transcribe_audio(audio)
+                transcription, new_language = await transcribe_audio(audio)
+                if new_language:
+                    detected_language = new_language
+                    print(f"Language detected: {detected_language}")
                 transcribe_time = time.time() - transcribe_start_time
                 
                 if transcription:
@@ -104,7 +110,7 @@ async def main():
                     # Get AI response
                     print("\n=== GETTING AI RESPONSE ===")
                     ai_start_time = time.time()
-                    ai_response = await get_ai_response(transcription, messages)
+                    ai_response = await get_ai_response(transcription, messages, detected_language)
                     ai_time = time.time() - ai_start_time
                     
                     if ai_response:
@@ -116,7 +122,7 @@ async def main():
                         print("\n=== TEXT TO SPEECH ===")
                         tts_start_time = time.time()
                         audio_file = "ai_response.mp3"
-                        if await text_to_speech(ai_response, audio_file):
+                        if await text_to_speech(ai_response, audio_file, detected_language):
                             play_audio(audio_file)
                             # Clean up the audio file after playing
                             try:
@@ -148,9 +154,11 @@ async def main():
                             print("\n=== WAITING FOR FINAL RESPONSE ===")
                             try:
                                 final_audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
-                                final_transcription = await transcribe_audio(final_audio)
+                                final_transcription, final_language = await transcribe_audio(final_audio)
                                 if final_transcription:
                                     print(f"\nFinal response: {final_transcription}")
+                                    if final_language:
+                                        detected_language = final_language
                                     message_summary.append(final_transcription)
                                     
                                     # Store conversation in MongoDB after final response

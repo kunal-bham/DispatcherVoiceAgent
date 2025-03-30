@@ -5,12 +5,12 @@ import asyncio
 import traceback
 
 async def transcribe_audio(audio_data):
-    """Transcribe audio using OpenAI's Whisper API"""
+    """Transcribe audio using OpenAI's Whisper API and detect language"""
     try:
         # Check if API key is set
         if not OPENAI_API_KEY:
             print("Error: OPENAI_API_KEY is not set in environment variables")
-            return None
+            return None, None
 
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}"
@@ -32,7 +32,7 @@ async def transcribe_audio(audio_data):
             data = {
                 "model": "whisper-1",
                 "response_format": "json",
-                "language": "en"
+                "language": None  # Let Whisper auto-detect the language
             }
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
@@ -42,19 +42,20 @@ async def transcribe_audio(audio_data):
                     
                     if response.status_code != 200:
                         print(f"Error response: {response.text}")
-                        return None
+                        return None, None
                         
                     result = response.json()
                     transcription = result["text"]
-                    print("Transcription successful")
+                    detected_language = result.get("language", "en")  # Default to English if not detected
+                    print(f"Transcription successful. Detected language: {detected_language}")
             except asyncio.CancelledError:
                 print("Transcription cancelled")
-                return None
+                return None, None
             except Exception as e:
                 print(f"Error in transcription API call: {e}")
                 print("Full traceback:")
                 print(traceback.format_exc())
-                return None
+                return None, None
         
         # Clean up temporary file
         try:
@@ -63,9 +64,9 @@ async def transcribe_audio(audio_data):
         except Exception as e:
             print(f"Error cleaning up temporary file: {e}")
             
-        return transcription
+        return transcription, detected_language
     except Exception as e:
         print(f"Error in transcription: {e}")
         print("Full traceback:")
         print(traceback.format_exc())
-        return None 
+        return None, None 

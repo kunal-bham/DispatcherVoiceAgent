@@ -9,13 +9,32 @@ from alloy_config import ALLOY_CONFIG
 # Using FastSpeech2 model which is more reliable and natural sounding
 _tts = None
 
-def get_tts():
+def get_tts(language="en"):
     global _tts
     if _tts is None:
         try:
-            print("Initializing TTS model...")
-            _tts = TTS(model_name="tts_models/en/ljspeech/fast_pitch", progress_bar=True)
-            print("TTS model initialized successfully")
+            print(f"Initializing TTS model for language: {language}")
+            # Map languages to their corresponding TTS models
+            model_map = {
+                "en": "tts_models/en/ljspeech/fast_pitch",
+                "es": "tts_models/es/css10/vits",
+                "fr": "tts_models/fr/css10/vits",
+                "de": "tts_models/de/thorsten/vits",
+                "it": "tts_models/it/mai/tacotron2-DDC",
+                "pt": "tts_models/pt/cv/vits",
+                "pl": "tts_models/pl/mai/tacotron2-DDC",
+                "ru": "tts_models/ru/multi_dataset/vits",
+                "nl": "tts_models/nl/mai/tacotron2-DDC",
+                "ar": "tts_models/ar/cv/vits",
+                "ko": "tts_models/ko/kss/vits",
+                "ja": "tts_models/ja/kokoro/tacotron2-DDC",
+                "zh": "tts_models/zh-CN/baker/tacotron2-DDC"
+            }
+            
+            # Get the appropriate model for the language, default to English if not supported
+            model_name = model_map.get(language, "tts_models/en/ljspeech/fast_pitch")
+            _tts = TTS(model_name=model_name, progress_bar=True)
+            print(f"TTS model initialized successfully for {language}")
         except Exception as e:
             print(f"Error initializing TTS model: {e}")
             # Try alternative model if the first one fails
@@ -70,25 +89,25 @@ def apply_voice_modulation(audio_data, sample_rate):
     
     return audio_data
 
-async def text_to_speech(text: str, output_file: str = "response.mp3"):
+async def text_to_speech(text: str, output_file: str = "response.mp3", language: str = "en"):
     """
     Convert text to speech using Coqui TTS with Alloy's voice settings
     Args:
         text: The text to convert to speech
         output_file: The output file path for the audio
+        language: The language code (e.g., 'en', 'es', 'fr', etc.)
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # Get the TTS model instance
-        tts = get_tts()
+        # Get the TTS model instance for the specified language
+        tts = get_tts(language)
         
         # Generate speech with Coqui TTS
         tts.tts_to_file(
             text=text,
             file_path=output_file,
             speed=ALLOY_CONFIG["voice_settings"]["speed"],
-            # Add pitch variation for more natural sound
             pitch=ALLOY_CONFIG["voice_settings"]["pitch"]
         )
         
