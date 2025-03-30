@@ -31,7 +31,13 @@ class DatabaseManager {
             
             const result = await response.json();
             console.log('Server response:', result);
-            return result.entry;
+            
+            if (result.success && result.entry) {
+                console.log('Entry added successfully:', result.entry);
+                return result.entry;
+            } else {
+                throw new Error('Invalid response format from server');
+            }
         } catch (error) {
             console.error('Error adding entry:', error);
             console.error('Full error details:', {
@@ -57,8 +63,17 @@ class DatabaseManager {
             
             const entries = await response.json();
             console.log(`Received ${entries.length} entries`);
-            console.log('Entries:', entries);  // Log the actual entries
-            return entries;
+            
+            // Validate entries structure
+            const validEntries = entries.filter(entry => 
+                entry && 
+                entry._id && 
+                entry.message && 
+                entry.timestamp
+            );
+            
+            console.log('Valid entries:', validEntries);
+            return validEntries;
         } catch (error) {
             console.error('Error fetching entries:', error);
             console.error('Full error details:', {
@@ -102,7 +117,17 @@ class DatabaseManager {
                     console.log('Latest entry ID:', latestEntry._id);
                     console.log('Current lastEntryId:', this.lastEntryId);
                     
-                    if (this.lastEntryId !== latestEntry._id) {
+                    // Convert both IDs to strings for comparison
+                    const latestId = latestEntry._id.toString();
+                    const lastId = this.lastEntryId ? this.lastEntryId.toString() : null;
+                    
+                    console.log('Comparing IDs:', {
+                        latestId,
+                        lastId,
+                        areEqual: latestId === lastId
+                    });
+                    
+                    if (latestId !== lastId) {
                         console.log('New entry detected!');
                         console.log('Entry details:', latestEntry);
                         this.lastEntryId = latestEntry._id;

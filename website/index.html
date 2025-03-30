@@ -87,22 +87,62 @@
     import dbManager from './src/db.js';
     import notification from './src/notification.js';
 
+    console.log('\n=== FRONTEND INITIALIZATION ===');
+    console.log('Setting up notification listener...');
+
     // Listen for new entries from MongoDB
     dbManager.addListener((entry) => {
-      notification.show('New entry added: ' + entry.message);
+      console.log('\n=== NOTIFICATION LISTENER CALLBACK ===');
+      console.log('Received entry in listener:', entry);
+      console.log('Entry message:', entry.message);
+      console.log('Entry timestamp:', entry.timestamp);
+      console.log('Entry ID:', entry._id);
+      
+      try {
+        console.log('Attempting to show notification...');
+        notification.show('New entry added: ' + entry.message);
+        console.log('Notification show called successfully');
+      } catch (error) {
+        console.error('Error in notification listener:', error);
+        console.error('Full error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
     });
+
+    console.log('Notification listener setup complete');
 
     // Make the test function available globally
     window.testNewEntry = async function() {
+      console.log('\n=== TEST ENTRY BUTTON CLICKED ===');
       try {
-        await dbManager.addEntry({
-          message: 'Test Entry ' + new Date().toLocaleTimeString(),
+        const testMessage = 'Test Entry ' + new Date().toLocaleTimeString();
+        console.log('Creating test entry with message:', testMessage);
+        
+        const entry = {
+          message: testMessage,
           timestamp: new Date()
-        });
+        };
+        console.log('Test entry object:', entry);
+        
+        console.log('Calling dbManager.addEntry...');
+        const result = await dbManager.addEntry(entry);
+        console.log('Test entry result:', result);
+        
+        console.log('Test entry completed successfully');
       } catch (error) {
-        console.error('Error adding test entry:', error);
+        console.error('Error in testNewEntry:', error);
+        console.error('Full error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
       }
     };
+
+    console.log('Frontend initialization complete');
   </script>
 </body></html>
 
