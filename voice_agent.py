@@ -4,6 +4,7 @@ import time
 import os
 import sys
 from dotenv import load_dotenv
+import traceback
 
 # Add src directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -40,11 +41,13 @@ async def main():
     def get_summary():
         return " ".join(message_summary)
     
+    print("\n=== VOICE AGENT STARTED ===")
     print("Starting voice-based emergency assistant...")
     print("Press Ctrl+C to stop")
     
     with sr.Microphone() as source:
         # Adjust for ambient noise
+        print("\n=== NOISE ADJUSTMENT ===")
         print("Adjusting for ambient noise... Please wait...")
         noise_start_time = time.time()
         recognizer.adjust_for_ambient_noise(source, duration=2)
@@ -53,6 +56,7 @@ async def main():
         print("Ready! Speak now...")
         
         # Start with initial greeting
+        print("\n=== INITIAL GREETING ===")
         greeting_start_time = time.time()
         initial_greeting = ALLOY_CONFIG["conversation_style"]["greeting"]
         print(f"AI: {initial_greeting}")
@@ -70,7 +74,7 @@ async def main():
         while exchange_count < 2:
             try:
                 # Listen for audio input with adjusted parameters
-                print("\nListening...")
+                print("\n=== LISTENING FOR INPUT ===")
                 listen_start_time = time.time()
                 try:
                     audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
@@ -84,6 +88,7 @@ async def main():
                 response_start_time = time.time()
                 
                 # Transcribe the audio
+                print("\n=== TRANSCRIBING AUDIO ===")
                 transcribe_start_time = time.time()
                 transcription = await transcribe_audio(audio)
                 transcribe_time = time.time() - transcribe_start_time
@@ -94,8 +99,10 @@ async def main():
                     
                     # Add user's message to summary
                     message_summary.append(transcription)
+                    print(f"Message summary length: {len(message_summary)}")
                     
                     # Get AI response
+                    print("\n=== GETTING AI RESPONSE ===")
                     ai_start_time = time.time()
                     ai_response = await get_ai_response(transcription, messages)
                     ai_time = time.time() - ai_start_time
@@ -106,6 +113,7 @@ async def main():
                         print(f"AI response time: {ai_time:.2f} seconds")
                         
                         # Convert AI response to speech and play it
+                        print("\n=== TEXT TO SPEECH ===")
                         tts_start_time = time.time()
                         audio_file = "ai_response.mp3"
                         if await text_to_speech(ai_response, audio_file):
@@ -120,7 +128,7 @@ async def main():
                         
                         # Increment exchange count
                         exchange_count += 1
-                        print(f"Exchange count: {exchange_count}")
+                        print(f"\nExchange count: {exchange_count}")
                         
                         # Print total response time
                         response_time = time.time() - response_start_time
@@ -131,13 +139,13 @@ async def main():
                         print(f"Cumulative time: {cumulative_time:.2f} seconds")
 
                         # Print message summary after each exchange
-                        print("\nMessage Summary:")
-                        print("---------------")
+                        print("\n=== MESSAGE SUMMARY ===")
+                        print("---------------------")
                         print(get_summary())
 
                         # If this was the last exchange, wait for final response
-                        if exchange_count >= 2:
-                            print("\nWaiting for final response...")
+                        if exchange_count >= 1:
+                            print("\n=== WAITING FOR FINAL RESPONSE ===")
                             try:
                                 final_audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
                                 final_transcription = await transcribe_audio(final_audio)
@@ -146,24 +154,42 @@ async def main():
                                     message_summary.append(final_transcription)
                                     
                                     # Store conversation in MongoDB after final response
-                                    print("\nStoring conversation in MongoDB...")
+                                    print("\n=== STORING CONVERSATION IN MONGODB ===")
+                                    print("Message summary to store:", message_summary)
                                     try:
-                                        await store_conversation(message_summary)
-                                        print("Conversation stored successfully")
+                                        storage_start_time = time.time()
+                                        storage_result = await store_conversation(message_summary)
+                                        storage_time = time.time() - storage_start_time
+                                        
+                                        if storage_result:
+                                            print(f"Conversation stored successfully in {storage_time:.2f} seconds")
+                                        else:
+                                            print("Failed to store conversation")
+                                            
                                     except Exception as e:
                                         print(f"Error storing conversation: {e}")
+                                        print("Full traceback:")
+                                        print(traceback.format_exc())
                                     
                                     # Break out of the loop after storing
                                     break
                             except Exception as e:
                                 print(f"Error getting final response: {e}")
+                                print("Full traceback:")
+                                print(traceback.format_exc())
                                 # Try to store conversation even if final response fails
                                 try:
-                                    await store_conversation(message_summary)
-                                    print("Conversation stored successfully")
+                                    print("\nAttempting to store conversation after error...")
+                                    storage_result = await store_conversation(message_summary)
+                                    if storage_result:
+                                        print("Conversation stored successfully after error")
+                                    else:
+                                        print("Failed to store conversation after error")
                                 except Exception as store_error:
-                                    print(f"Error storing conversation: {store_error}")
-                                break
+                                    print(f"Error storing conversation after error: {store_error}")
+                                    print("Full traceback:")
+                                    print(traceback.format_exc())
+                         
                 
             except KeyboardInterrupt:
                 print("\n=== KEYBOARD INTERRUPT DETECTED ===")
@@ -172,37 +198,20 @@ async def main():
                 print("\nFinal Message Summary:")
                 print("---------------------")
                 print(get_summary())
-                '''
-                print("\nAttempting to store conversation...")
-                try:
-                    # Store the conversation with both raw messages and summary
-                    await store_conversation(message_summary)
-                    print("Storage process completed")
-                except Exception as e:
-                    print(f"Error during storage: {e}")
-                finally:
-                '''              
-                    # Ensure we break out of the loop
                 break
             except Exception as e:
-                print(f"\n=== ERROR DETECTED ===")
-                print(f"An error occurred: {e}")
-                print("Attempting to store conversation...")
-                # Store the conversation even if there's an error
-                await store_conversation(message_summary)
-                print("Storage process completed")
-                continue
-        
-        # Print closing message when we exit the loop
-        print("Transferring to hotline...")
-        # Convert closing message to speech and play it
-        audio_file = "ai_response.mp3"
-        if await text_to_speech("A human dispatcher is now available. I'm transferring your call to them...", audio_file):
-            play_audio(audio_file)
-            try:
-                os.remove(audio_file)
-            except:
-                pass
+                print(f"\nError in main loop: {e}")
+                print("Full traceback:")
+                print(traceback.format_exc())
+                break
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n=== PROGRAM TERMINATED BY USER ===")
+    except Exception as e:
+        print(f"\n=== PROGRAM ERROR ===")
+        print(f"Error: {e}")
+        print("Full traceback:")
+        print(traceback.format_exc()) 
