@@ -26,6 +26,7 @@
       z-index: 1;
       padding: 2rem;
       text-align: center;
+      margin-bottom: 2rem;
     }
     h1 {
       color: white;
@@ -41,33 +42,18 @@
       font-weight: 400;
       opacity: 0.9;
     }
-    .test-button {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 0.8rem 1.5rem;
-      font-size: 1rem;
-      background-color: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      z-index: 100;
-    }
-    .test-button:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-    }
     .entries-container {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      position: relative;
+      width: 80%;
+      max-width: 800px;
+      height: 60vh;
       background: rgba(0, 0, 0, 0.7);
       padding: 1rem;
-      max-height: 40vh;
+      border-radius: 10px;
       overflow-y: auto;
       z-index: 10;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
     }
     .entry {
       background: rgba(255, 255, 255, 0.1);
@@ -76,6 +62,11 @@
       margin: 0.5rem 0;
       color: white;
       text-align: left;
+      transition: all 0.3s ease;
+    }
+    .entry:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(5px);
     }
     .entry .message {
       font-size: 1.1rem;
@@ -100,10 +91,32 @@
       background: rgba(0, 255, 0, 0.3);
       color: #44ff44;
     }
+    /* Add a title to the entries container */
+    .entries-title {
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: 600;
+    }
+    /* Style the scrollbar */
+    .entries-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .entries-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    .entries-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    .entries-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
   </style>
 </head><body>
   <div id="vanta-bg"></div>
-  <button class="test-button" onclick="testNewEntry()">Test New Entry</button>
   <script>
     VANTA.HALO({
       el: "#vanta-bg",
@@ -126,6 +139,7 @@
   </div>
 
   <div class="entries-container" id="entries-container">
+    <div class="entries-title">Emergency Call History</div>
     <!-- Entries will be displayed here -->
   </div>
 

@@ -28,6 +28,6 @@ ALLOY_CONFIG: Dict[str, Any] = {
         "acknowledgment": "I understand your concern. Let me help you with that.",
         "clarification": "Could you please provide more details about that?",
         "reassurance": "I'm here to assist you. We'll handle this together.",
-        "closing": "Is there anything else you need help with?"
+        "closing": "A dispatcher is online, we will pass you on to them."
     }
 } 

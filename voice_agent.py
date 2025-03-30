@@ -74,7 +74,7 @@ async def main():
         greeting_time = time.time() - greeting_start_time
         print(f"Initial greeting time: {greeting_time:.2f} seconds")
         
-        while exchange_count < 2:
+        while exchange_count < 5:
             try:
                 # Listen for audio input with adjusted parameters
                 print("\n=== LISTENING FOR INPUT ===")
@@ -110,7 +110,15 @@ async def main():
                     # Get AI response
                     print("\n=== GETTING AI RESPONSE ===")
                     ai_start_time = time.time()
-                    ai_response = await get_ai_response(transcription, messages, detected_language)
+                    
+                    # Force specific responses based on exchange count
+                    if exchange_count == 2:  # Third exchange
+                        ai_response = "What is your exact location?"
+                    elif exchange_count == 3:  # Fourth exchange
+                        ai_response = "A dispatcher is online, we will pass you on to them."
+                    else:
+                        ai_response = await get_ai_response(transcription, messages, detected_language)
+                    
                     ai_time = time.time() - ai_start_time
                     
                     if ai_response:
@@ -150,7 +158,7 @@ async def main():
                         print(get_summary())
 
                         # If this was the last exchange, wait for final response
-                        if exchange_count >= 1:
+                        if exchange_count >= 4:
                             print("\n=== WAITING FOR FINAL RESPONSE ===")
                             try:
                                 final_audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
