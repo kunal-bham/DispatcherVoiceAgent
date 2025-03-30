@@ -9,7 +9,7 @@ load_dotenv()
 
 # MongoDB configuration
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
-DB_NAME = 'dispatcher_db'
+DB_NAME = 'CALLER_SUMMARY'
 COLLECTION_NAME = 'messages'
 
 def get_db():

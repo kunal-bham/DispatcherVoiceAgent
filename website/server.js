@@ -6,11 +6,17 @@ const port = 3000;
 
 // MongoDB connection URL
 const mongoUrl = 'mongodb://localhost:27017';
-const dbName = 'dispatcher_db';
+const dbName = 'CALL_SUMMARY';
 
 // Middleware
 app.use(express.json());
+
+// Serve static files from the root directory
 app.use(express.static(path.join(__dirname)));
+// Serve static files from the dist directory
+app.use('/dist', express.static(path.join(__dirname, 'dist')));
+// Serve static files from the src directory
+app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // Add CORS headers
 app.use((req, res, next) => {
@@ -55,7 +61,7 @@ app.post('/api/entries', async (req, res) => {
     const response = { 
       success: true, 
       entry: { 
-        _id: result.insertedId,
+        _id: result.inserted_id,
         message: entry.message,
         timestamp: entry.timestamp,
         type: entry.type
@@ -78,39 +84,23 @@ app.post('/api/entries', async (req, res) => {
 app.get('/api/entries', async (req, res) => {
   console.log('\n=== FETCHING ALL ENTRIES ===');
   try {
-    console.log('Querying MongoDB for all entries...');
-    
-    // First, let's check for conversation entries specifically
-    const conversationEntries = await db.collection('messages')
-      .find({ raw_messages: { $exists: true } })
-      .toArray();
-    console.log('\n=== CONVERSATION ENTRIES ===');
-    console.log(`Found ${conversationEntries.length} conversation entries`);
-    console.log('Conversation entries:', JSON.stringify(conversationEntries, null, 2));
-    
-    // Now get all entries
     const entries = await db.collection('messages')
       .find({})
-      .sort({ timestamp: -1 })
+      .sort({ created_at: -1, timestamp: -1 })
       .toArray();
-    console.log('\n=== ALL ENTRIES ===');
-    console.log(`Found ${entries.length} total entries`);
-    console.log('Raw entries:', JSON.stringify(entries, null, 2));
+    
+    console.log(`Found ${entries.length} entries`);
     
     // Format entries to ensure consistent structure
     const formattedEntries = entries.map(entry => {
-      // Handle conversation entries (from voice agent)
+      // Handle voice agent entries (with raw_messages)
       if (entry.raw_messages) {
-        console.log('\n=== FORMATTING CONVERSATION ENTRY ===');
-        console.log('Original entry:', JSON.stringify(entry, null, 2));
-        const formatted = {
+        return {
           _id: entry._id,
           message: entry.concise_summary || entry.raw_messages,
-          timestamp: entry.created_at || entry.timestamp,
-          type: 'conversation'
+          timestamp: entry.created_at,
+          type: 'emergency_call'
         };
-        console.log('Formatted entry:', JSON.stringify(formatted, null, 2));
-        return formatted;
       }
       // Handle test entries
       return {
@@ -121,17 +111,11 @@ app.get('/api/entries', async (req, res) => {
       };
     });
     
-    console.log('\n=== FINAL FORMATTED ENTRIES ===');
-    console.log('Formatted entries:', JSON.stringify(formattedEntries, null, 2));
+    console.log('Formatted entries:', formattedEntries);
     res.json(formattedEntries);
   } catch (error) {
     console.error('Error fetching entries:', error);
-    console.error('Full error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
