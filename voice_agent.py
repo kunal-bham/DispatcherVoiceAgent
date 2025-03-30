@@ -56,6 +56,7 @@ async def main():
         greeting_start_time = time.time()
         initial_greeting = ALLOY_CONFIG["conversation_style"]["greeting"]
         print(f"AI: {initial_greeting}")
+        message_summary.append(initial_greeting)
         audio_file = "ai_response.mp3"
         if await text_to_speech(initial_greeting, audio_file):
             play_audio(audio_file)
@@ -101,6 +102,7 @@ async def main():
                     
                     if ai_response:
                         print(f"AI: {ai_response}")
+                        message_summary.append(ai_response)
                         print(f"AI response time: {ai_time:.2f} seconds")
                         
                         # Convert AI response to speech and play it
