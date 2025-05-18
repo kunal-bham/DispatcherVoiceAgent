@@ -13,10 +13,24 @@ messages = [
     {"role": "system", "content": SYSTEM_PROMPT},
 ]
 
-async def get_ai_response(transcription, messages):
+async def get_ai_response(transcription, messages, detected_language="en"):
     """Get AI response using GPT-3.5-turbo via httpx with Alloy configuration"""
     # Create a copy of messages to avoid modifying the original
     current_messages = messages.copy()
+    
+    # Add language instruction to system prompt
+    if detected_language == "es":
+        language_prompt = (
+            "Por favor, responde en español de manera profesional y clara. "
+            "Usa un tono formal y empático, apropiado para una operadora de emergencias. "
+            "Asegúrate de usar vocabulario médico y de emergencia preciso en español. "
+            "Mantén las respuestas concisas pero completas. "
+        )
+    else:
+        language_prompt = f"Please respond in {detected_language} language. "
+    
+    current_messages[0]["content"] = language_prompt + current_messages[0]["content"]
+    
     current_messages.append({"role": "user", "content": transcription})
     
     headers = {
@@ -47,15 +61,10 @@ async def get_ai_response(transcription, messages):
             
             # Remove any instances of the greeting from the response
             bot_message = bot_message.replace("911, what's your emergency?", "").strip()
+            bot_message = bot_message.replace("9-1-1, what's your emergency?", "").strip()
             
-            # Only show direct response for first message
-            if len(messages) == 1:  # First message (after system prompt)
-                messages.append({"role": "assistant", "content": bot_message})
-                return bot_message
-            
-            # Add conversation style for subsequent messages
-            if "?" in transcription:  # Question detected
-                bot_message = ALLOY_CONFIG["conversation_style"]["acknowledgment"] + " " + bot_message
+            # Remove any instances of the acknowledgment phrase
+            bot_message = bot_message.replace(ALLOY_CONFIG["conversation_style"]["acknowledgment"], "").strip()
             
             # Only append to messages if the request was successful
             messages.append({"role": "assistant", "content": bot_message})

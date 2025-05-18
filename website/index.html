@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html><head>
+  <title>QuickCall911</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="./dist/vanta.halo.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    #vanta-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: white;
+      font-size: 4.5rem;
+      margin-bottom: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: white;
+      font-size: 1.5rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      opacity: 0.9;
+    }
+    .entries-container {
+      position: relative;
+      width: 80%;
+      max-width: 800px;
+      height: 60vh;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1rem;
+      border-radius: 10px;
+      overflow-y: auto;
+      z-index: 10;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+    }
+    .entry {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      color: white;
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+    .entry:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(5px);
+    }
+    .entry .message {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .entry .timestamp {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .entry .type {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .entry .type.emergency_call {
+      background: rgba(255, 0, 0, 0.3);
+      color: #ff4444;
+    }
+    .entry .type.test_entry {
+      background: rgba(0, 255, 0, 0.3);
+      color: #44ff44;
+    }
+    /* Add a title to the entries container */
+    .entries-title {
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: 600;
+    }
+    /* Style the scrollbar */
+    .entries-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .entries-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    .entries-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    .entries-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head><body>
+  <div id="vanta-bg"></div>
+  <script>
+    VANTA.HALO({
+      el: "#vanta-bg",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      backgroundColor: 0x131a43,
+      baseColor: 0x001a59,
+      size: 1.0,
+      amplitudeFactor: 1.0,
+      xOffset: 0,
+      yOffset: 0
+    })
+  </script>
+  <div class="container">
+      <h1>QuickCall911</h1>
+      <div class="subtitle">911 Dispatcher Voice Agent</div>
+  </div>
+
+  <div class="entries-container" id="entries-container">
+    <div class="entries-title">Emergency Call History</div>
+    <!-- Entries will be displayed here -->
+  </div>
+
+  <script type="module">
+    import dbManager from './src/db.js';
+    import notification from './src/notification.js';
+
+    console.log('\n=== FRONTEND INITIALIZATION ===');
+    console.log('Setting up notification listener...');
+
+    // Function to format timestamp
+    function formatTimestamp(timestamp) {
+      return new Date(timestamp).toLocaleString();
+    }
+
+    // Function to create entry element
+    function createEntryElement(entry) {
+      console.log('Creating entry element for:', entry);
+      const div = document.createElement('div');
+      div.className = 'entry';
+      
+      // Format the message to handle any special characters
+      const message = entry.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      
+      div.innerHTML = `
+        <div class="message">${message}</div>
+        <div class="timestamp">${formatTimestamp(entry.timestamp)}</div>
+        <div class="type ${entry.type}">${entry.type}</div>
+      `;
+      
+      console.log('Created entry element:', div);
+      return div;
+    }
+
+    // Function to update entries display
+    async function updateEntriesDisplay() {
+      try {
+        console.log('Updating entries display...');
+        const entries = await dbManager.getEntries();
+        console.log('Received entries:', entries);
+        
+        const container = document.getElementById('entries-container');
+        container.innerHTML = ''; // Clear existing entries
+        
+        if (entries && entries.length > 0) {
+          entries.forEach(entry => {
+            console.log('Creating element for entry:', entry);
+            const entryElement = createEntryElement(entry);
+            container.appendChild(entryElement);
+          });
+        } else {
+          console.log('No entries found to display');
+        }
+      } catch (error) {
+        console.error('Error updating entries display:', error);
+      }
+    }
+
+    // Initial display of entries
+    updateEntriesDisplay();
+
+    // Listen for new entries from MongoDB
+    dbManager.addListener((entry) => {
+      console.log('\n=== NOTIFICATION LISTENER CALLBACK ===');
+      console.log('Received entry in listener:', entry);
+      console.log('Entry message:', entry.message);
+      console.log('Entry timestamp:', entry.timestamp);
+      console.log('Entry ID:', entry._id);
+      
+      try {
+        console.log('Attempting to show notification...');
+        notification.show('New entry added: ' + entry.message);
+        console.log('Notification show called successfully');
+        // Update the display when new entry is received
+        updateEntriesDisplay();
+      } catch (error) {
+        console.error('Error in notification listener:', error);
+        console.error('Full error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+    });
+
+    console.log('Notification listener setup complete');
+
+    // Make the test function available globally
+    window.testNewEntry = async function() {
+      console.log('\n=== TEST ENTRY BUTTON CLICKED ===');
+      try {
+        const testMessage = 'Test Entry ' + new Date().toLocaleTimeString();
+        console.log('Creating test entry with message:', testMessage);
+        
+        const entry = {
+          message: testMessage,
+          timestamp: new Date()
+        };
+        console.log('Test entry object:', entry);
+        
+        console.log('Calling dbManager.addEntry...');
+        const result = await dbManager.addEntry(entry);
+        console.log('Test entry result:', result);
+        
+        console.log('Test entry completed successfully');
+      } catch (error) {
+        console.error('Error in testNewEntry:', error);
+        console.error('Full error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+    };
+
+    console.log('Frontend initialization complete');
+  </script>
+</body></html>
+
+
