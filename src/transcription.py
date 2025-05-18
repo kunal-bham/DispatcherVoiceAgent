@@ -3,6 +3,7 @@ import os
 from config import OPENAI_API_KEY, WHISPER_ENDPOINT
 import asyncio
 import traceback
+import tempfile
 
 async def transcribe_audio(audio_data):
     """Transcribe audio using OpenAI's Whisper API and detect language"""
